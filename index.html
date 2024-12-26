@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solstice's Generous Offering</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            display: block;
+        }
+        #timer {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: white;
+            font-size: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #leftInfo {
+            position: absolute;
+            top: 10%;
+            left: 20px;
+            color: white;
+            font-family: "Georgia", "Garamond", serif;
+            text-align: center;
+        }
+        #leftInfo img {
+            display: block;
+            margin: 0 auto;
+            width: 180px; /* Adjustable size */
+            height: auto;
+        }
+        #leftInfo p {
+            margin: 10px 0 0;
+            font-size: 14px;
+            white-space: pre-wrap; /* Enables line breaks */
+        }
+    </style>
+</head>
+<body>
+    <div id="timer">60</div>
+    <div id="leftInfo">
+        <img id="leftImage" src="" alt="Info Image">
+        <p id="leftText"></p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const timerDisplay = document.getElementById('timer');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const cakeRadius = 35;
+        const innerRadius = 150;
+        const outerRadius = 270;
+        let hammerRadius = 20;
+        let hamsterSize = 35; //
+        const hamsters = [];
+        let gameRunning = true;
+        let score = 0;
+        let timeLeft = 60;
+        const hammerEffects = [];
+
+         // Image and text data
+         const imageData = [
+            { src: 'ericlu.png', text: 'Swing gently, \nsavor the sweetness of simple joys.' },
+            { src: 'girl_with_scarf.png', text: 'Warmed by the scarf of memories, \nshe walks toward tomorrow.' },
+            { src: 'orange.png', text: 'Bright like citrus, \nsoft as purring whispers of happiness.' },
+            { src: 'happy_bear.png', text: 'Feel the rhythm, \nlet your heart dance free.' },
+            { src: 'plant.png', text: 'Rooted in care, \nreaching toward the endless sky.' }
+        ];
+
+        // Randomly select an image and text
+        function updateLeftInfo() {
+            const randomIndex = Math.floor(Math.random() * imageData.length);
+            const selectedData = imageData[randomIndex];
+            
+            const leftImage = document.getElementById('leftImage');
+            const leftText = document.getElementById('leftText');
+
+            leftImage.src = selectedData.src;
+            leftText.textContent = selectedData.text;
+        }
+
+        // Initial update of the left info
+        updateLeftInfo();
+
+        // Example: Update the left info every 15 seconds
+        setInterval(updateLeftInfo, 15000);
+
+        let randNum1=Math.random();
+        let randNum2=Math.random();
+
+        const cakeImg = new Image();
+        cakeImg.src = 'cake.gif';
+
+        const hamsterImg = new Image();
+        if (randNum1<0.1){
+            hamsterImg.src = 'sango.png';
+        }else if (randNum2<0.35){
+            hamsterImg.src = 'angold.png';
+        }else{
+            hamsterImg.src = 'hamster.png';
+        }
+        
+
+        class Hamster {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.speed = Math.random() * 0.5 + 0.5;
+            }
+
+            moveTowardsCake() {
+                const dx = centerX - this.x;
+                const dy = centerY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed;
+            }
+
+            draw() {
+                const aspectRatio = hamsterImg.width / hamsterImg.height;
+                const width = hamsterSize * aspectRatio;
+                const height = hamsterSize;
+                ctx.drawImage(
+                    hamsterImg,
+                    this.x - width / 2,
+                    this.y - height / 2,
+                    width,
+                    height
+                );
+            }
+        }
+
+        class HammerEffect {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = hammerRadius;
+                this.alpha = 1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                this.alpha -= 0.05;
+            }
+
+            isFaded() {
+                return this.alpha <= 0;
+            }
+        }
+
+        function spawnHamster() {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * (outerRadius - innerRadius) + innerRadius;
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+            hamsters.push(new Hamster(x, y));
+        }
+
+        function drawBackground() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw cake
+            const cakeWidth = cakeRadius * 2;
+            const cakeHeight = cakeRadius * 2 * (cakeImg.height / cakeImg.width);
+            ctx.drawImage(
+                cakeImg,
+                centerX - cakeWidth / 2,
+                centerY - cakeHeight / 2,
+                cakeWidth,
+                cakeHeight
+            );
+
+            // Draw inner circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
+
+            // Draw outer circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
+        }
+
+        function updateGame() {
+            drawBackground();
+
+            // Draw and update hammer effects
+            for (let i = hammerEffects.length - 1; i >= 0; i--) {
+                hammerEffects[i].draw();
+                if (hammerEffects[i].isFaded()) {
+                    hammerEffects.splice(i, 1);
+                }
+            }
+
+            for (let i = hamsters.length - 1; i >= 0; i--) {
+                const hamster = hamsters[i];
+                hamster.moveTowardsCake();
+                hamster.draw();
+
+                // Check collision with cake
+                const distToCake = Math.sqrt(
+                    (hamster.x - centerX) ** 2 + (hamster.y - centerY) ** 2
+                );
+                if (distToCake <= cakeRadius) {
+                    gameRunning = false;
+                    endGame('Game Over!');
+                }
+            }
+        }
+
+        function handleInteraction(x, y) {
+            if (!gameRunning) return;
+
+            hammerEffects.push(new HammerEffect(x, y));
+
+            for (let i = hamsters.length - 1; i >= 0; i--) {
+                const hamster = hamsters[i];
+                const distToHammer = Math.sqrt(
+                    (hamster.x - x) ** 2 + (hamster.y - y) ** 2
+                );
+                if (distToHammer <= hammerRadius) {
+                    hamsters.splice(i, 1);
+                    score++;
+                }
+            }
+        }
+
+        function endGame(message) {
+            gameRunning = false;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(message, centerX, centerY - 20);
+            ctx.fillText('Score: ' + score, centerX, centerY + 20);
+        }
+
+        canvas.addEventListener('click', (e) => {
+            handleInteraction(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            handleInteraction(touch.clientX, touch.clientY);
+        });
+
+        function updateTimer() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+            } else {
+                endGame("Time's Up!");
+            }
+        }
+
+        function gameLoop() {
+            if (gameRunning) {
+                updateGame();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        setInterval(() => {
+            if (gameRunning) spawnHamster();
+        }, 1000);
+
+        setInterval(() => {
+            if (gameRunning) updateTimer();
+        }, 1000);
+
+        gameLoop();
+    </script>
+</body>
+</html>
